@@ -1,57 +1,60 @@
 " Vim syntax file
 " Language:	noweb
 " Filenames:	*.nw
-" Maintainer:	Markus Schöngart <markus@schoengart.net>
-" Last Change:	2015 Dec 15 - Initial version.
+" Maintainer:	Markus Schöngart (https://github.com/shoemark)
+" Last Change:	2016 Jan 24 - Recognizing chunk options is now optional.
+"		2015 Dec 15 - Initial version.
 " License:	Public Domain
 "
 " A syntax file for the `noweb' literate programming system.
 "
-" Actually, a small extension of noweb's syntax is recognized, as follows.
+" This syntax file highlights chunks written in arbitrary documentation and
+" code languages according to their respective syntax definition.
 "
-" The leading `@' that introduces documentation chunks may optionally be
-" followed by a region enclosed in square brackets (`[' ... `]'), the content
-" of which are taken to be comma separated options pertaining to the
-" documentation chunk introduced. If the pattern `lang=SYN' matches (exactly)
-" one of the options, then vim will highlight the chunk according to the syntax
-" file `SYN', if it has been loaded. The preamble cannot have options since it
-" is not introduced explicitly.
-" For example, `@[lang=tex] This is to be highlighted as \TeX{}'.
-"
-" Similarly, the pattern `<<...>>=' that introduces code chunks may optionally
-" contain an option region (as in `<<... [OPTS]>>='). It, too, may contain the
-" `lang=SYN' option and if it does, vim will highlight the code chunk according
-" to the syntax file `SYN', if it has been loaded.
-" For example, `<<Do Something [lang=cpp]>>=' introduces a C++ code chunk.
-"
-" Documentation languages can be loaded by `:call noweb#LoadDocLanguages("SYN")',
-" where `SYN' is the name of a syntax file, without extension.
-" Code languages can be loaded by `:call noweb#LoadCodeLanguages("SYN")',
-" where `SYN' is the name of a syntax file, without extension.
-" Syntax files identified by the variables `noweb_doc_languages' and
-" `noweb_code_languages', which are strings of comma-separated syntax file
-" names (without extension), are loaded during initialization.
+" Languages for documentation chunks can be loaded by `:call
+" noweb#LoadDocLanguages("SYN")', where `SYN' is the name of a syntax file,
+" without extension.  Languages for code chunks can be loaded by `:call
+" noweb#LoadCodeLanguages("SYN")', where `SYN' is the name of a syntax file,
+" without extension.  Syntax files identified by the variables
+" `noweb_doc_languages' and `noweb_code_languages', which are strings of
+" comma-separated syntax file names (without extension), are loaded during
+" initialization.
 "
 " Regardless of the method of language loading, the syntax that has been loaded
-" least recently is taken to be the default syntax that will be employed
-" whenever a chunk is missing the `lang=SYN' option.
+" least recently is taken to be the syntax that will be employed by default.
 "
 " So, putting `let noweb_code_languages="c,cpp,python,r"' into your .vimrc
 " prior to loading this syntax file will make code languages for C, C++, Python
-" and R available, where R is the syntax that will be assumed for all chunks
-" missing a suitable option.
+" and R available, with R being the default syntax.
 "
 " If `noweb_doc_languages' is not defined, it will default to `tex'.
 " If `noweb_code_languages' is not defined, it will default to `nosyntax'.
 "
-" It is possible to work with files following strict noweb syntax (without
-" `lang=SYN' options) and still highlight various different code languages
-" (although not at the same time). The method is to invoke `:call
-" noweb#LoadCodeLanguages("SYN")' with SYN set to the syntax that is to be used
-" for highlighting whenever you switch to a chunk that has a different syntax
-" than the one you have just been working with.  This will set the default
-" syntax to `SYN' which will render all code chunks with unidentified languages
-" according to that syntax file.
+" Chunks in web files following strict noweb syntax can only be highlighted in
+" the selected default syntax and all chunks will be highlighted thusly at the
+" same time.  It is still possible, albeit cumbersome, to work with code
+" chunks in various different programming languages.  The method is to invoke
+" `:call noweb#LoadCodeLanguages("SYN")' with SYN set to the syntax that is to
+" be used for highlighting whenever you switch to a chunk that has a different
+" syntax than the one you have just been working with.  This will set the
+" default syntax to `SYN' which will render all code chunks according to that
+" syntax file by default.
+"
+" This syntax file offers to optionally recognize a syntax extension that
+" makes working with heterogeneously typed chunks easier.  If it is enabled,
+" then a chunk may begin with an option region, which may span several lines.
+" It is introduced by `@[' and terminated by `]' and its content is taken to
+" be a comma separated list of key/value assignments pertaining to the chunk
+" introduced.  If the pattern `lang=SYN' matches (exactly) one of the options,
+" then vim will highlight the chunk according to the syntax file `SYN', if it
+" has been loaded.
+" Since this places the options into the chunk's content, a custom filter in
+" the noweb toolchain is required to strip them out again.
+"
+" This extension can be enabled by the vim variables called
+" `noweb_doc_options_enabled' and 'noweb_code_options_enabled'.
+" They should be set to "yes" if option recognition is desired.
+"
 
 if version < 600
   syntax clear
@@ -69,39 +72,57 @@ endif
 " the end of the document (`\%$') and need not repeat all the chunk markers,
 " reducing some duplication.
 " They are `fold' to enable the user to fold exactly at chunk boundaries.
-" They are `transparent' because highlighting is done in the next level and
-" beyond, which descriminates between documentation and code chunks.
+" They are `transparent' because highlighting is done at lower levels.
 syntax region nowebPreamble
 	\ start="\%^"
-	\ end="\(\%$\|^@\(\[[^]]*\]\)\?\(\s\|$\)\|^<<.*>>=$\)"me=s-1,he=s-1,re=s-1
-	\ contains=nowebDocChunkDefaultDoc
+	\ end="\(\%$\|^@\(\s\|\_$\)\|^<<.*>>=$\)"me=s-1,he=s-1,re=s-1
+	\ contains=nowebDocChunkDefault
 	\ keepend fold transparent
 syntax region nowebChunk
-	\ start="\(^@\(\[[^]]*\]\)\?\(\s\|$\)\|^<<.*>>=$\)"
-	\ end="\(^@\(\[[^]]*\]\)\?\(\s\|$\)\|^<<.*>>=$\|\%$\)"me=s-1,he=s-1,re=s-1
+	\ start="\(^@\(\s\|\_$\)\|^<<.*>>=$\)"
+	\ end="\(^@\(\s\|\_$\)\|^<<.*>>=$\|\%$\)"me=s-1,he=s-1,re=s-1
 	\ containedin=ALLBUT,nowebPreamble,nowebChunk
-	\ contains=nowebDocChunk,nowebCodeChunk
+	\ contains=nowebDocChunkIntro,nowebCodeChunkIntro
 	\ keepend fold transparent
+
+" All documentation chunks are contained in a `nowebDocChunkIntro' region.
+" It contains a `nowebDocChunkDef' child region, which regards the chunk's
+" introduction (matching the regular expression `^@(\s|$)') as region and
+" highlights it. (This is slightly silly in this case but is retained for
+" syntactical similarity to the code chunks' representation).
+" The `nowebDocChunk' cluster is also contained.  It represents the set of all
+" types of documentation chunks, one for the default type
+" (`nowebDocChunkDefault') and one for each documentation syntax that has been
+" loaded.
+syntax region nowebDocChunkIntro
+	\ start="^@\(\s\|\_$\)"
+	\ end="\%$"
+	\ contained containedin=nowebChunk
+	\ contains=nowebDocChunkDef,nowebDocChunk
+	\ transparent
 
 " Generally, the region named `nowebDocChunkSYN' defines the documentation
 " chunk for language `SYN'.  The region named `nowebDocChunkDefault' denotes
 " the default documentation syntax that is active when no `lang=SYN' option
-" (for a loaded language) is given.
+" (for a loaded language `SYN') is given.
 syntax region nowebDocChunkDefault
-	\ start="^@\(\[[^]]*\]\)\?\(\s\|$\)"
+	\ start=".\@="
 	\ end="\%$"
-	\ contained containedin=nowebChunk
-	\ contains=nowebDocChunkDef,nowebDocChunkDefaultDoc
+	\ contained containedin=nowebDocChunkIntro
+	\ contains=nowebDocChunkOpts,nowebDocChunkDefaultDoc
 	\ transparent
 
-" The cluster `nowebDocChunk' contains all loaded documentation chunk regions.
+" The cluster `nowebDocChunk' contains all loaded documentation chunk regions,
+" including chunk options.  The cluster `nowebDocChunkDoc' contains all
+" regions pertaining to loaded documentation languages.
 syntax cluster nowebDocChunk contains=nowebDocChunkDefault
+syntax cluster nowebDocChunkDoc contains=nowebDocChunkDefaultDoc
 
 " Load new documentation languages and set the last one as default.  This
 " function accepts variadic arguments and expects each argument to be a string
 " denoting a syntax file name, without extension.
 " Example: `:call noweb#LoadDocLanguages("tex", "html")'
-function noweb#LoadDocLanguages(...)
+function! noweb#LoadDocLanguages(...)
 	for syntax in a:000
 		" Undefine `b:current_syntax' so we don't confuse the syntax
 		" script we're going to load.
@@ -115,22 +136,27 @@ function noweb#LoadDocLanguages(...)
 		let b:current_syntax = "noweb"
 
 		" Define the region `nowebDocChunkSYN' for syntax named `SYN'.
-		" It contains the `nowebDocChunkDef', which highlights the
-		" documentation chunk's introduction, as well as the region
+		" It contains the `nowebDocChunkOpts', which highlights the
+		" documentation chunk's options, as well as the region
 		" `nowebDocChunkSYNDoc', which recognizes the documentation's
 		" actual syntax (`SYN').
-		execute "syntax region nowebDocChunk" . syntax
-			\ . " start=/^@\\(\\[\\([^]]*,\\)*lang=" . syntax . "\\(,[^]]*\\)*\\]\\)\\?\\(\\s\\|$\\)/"
-			\ . " end=/\\%$/"
-			\ . " contained containedin=nowebChunk"
-			\ . " contains=nowebDocChunkDef,nowebDocChunk" . syntax . "Doc"
-			\ . " transparent"
+		" Generation of this region is supressed if strict noweb
+		" compatibility is requested.
+		if exists("g:noweb_doc_options_enabled") && g:noweb_doc_options_enabled ==? "yes"
+			execute "syntax region nowebDocChunk" . syntax
+				\ . " start=/@\\[\\(\\_.*\\(,\\|\\s\\|$\\)\\)\\?lang=" . syntax . "\\(\\(,\\|\\s\\|$\\)\\_.*\\)\\?\\]/"
+				\ . " end=/\\%$/"
+				\ . " contained containedin=nowebDocChunkIntro"
+				\ . " contains=nowebDocChunkOpts,nowebDocChunk" . syntax . "Doc"
+				\ . " transparent"
+		endif
 
-		" Create both the `nowebDocChunkSYNChunk' as well as the
-		" default region `nowebDocChunkDefaultDoc' and make it
-		" recognize the requested language. Re-creating the region for
-		" the default syntax has the effect that chunks that omit a
-		" suitable `lang=SYN' option are matched to this syntax, too.
+		" Create both the `nowebDocChunkSYNDoc' as well as the default
+		" region `nowebDocChunkDefaultDoc' and make it recognize the
+		" requested language. Re-creating the region for the default
+		" syntax has the effect that chunks that omit a suitable
+		" `lang=SYN' option are from now on matched to this syntax,
+		" too.
 		for name in [ syntax, "Default" ]
 			execute "syntax region nowebDocChunk" . name . "Doc"
 				\ . " start=/.\\@=/"
@@ -140,6 +166,7 @@ function noweb#LoadDocLanguages(...)
 		endfor
 
 		execute "syntax cluster nowebDocChunk add=nowebDocChunk" . syntax
+		execute "syntax cluster nowebDocChunkDoc add=nowebDocChunk" . syntax . "Doc"
 
 		" Although `nowebDocChunkDef' and `nowebDocChunkOpts' both do
 		" not depend on the syntax being loaded, we still re-create
@@ -149,44 +176,58 @@ function noweb#LoadDocLanguages(...)
 	
 		syntax region nowebDocChunkDef
 			\ matchgroup=nowebDocChunkDelimiter
-			\ start="^@\(\[\)\?"rs=s+1
-			\ end="\(\]\)\?\(\s\|$\)"re=s
-			\ contained containedin=nowebDocChunk
-			\ contains=nowebDocChunkOpts
-			\ oneline
+			\ start="^@"rs=e
+			\ end="\(\s\|\_$\)"re=s
+			\ contained containedin=nowebDocChunkIntro
+			\ nextgroup=nowebDocChunk
 
-		syntax region nowebDocChunkOpts
-			\ start="\["
-			\ end="\]"
-			\ contained containedin=nowebDocChunkDef
-			\ oneline
+		if exists("g:noweb_doc_options_enabled") && g:noweb_doc_options_enabled ==? "yes"
+			syntax region nowebDocChunkOpts
+				\ matchgroup=nowebDocChunkOptsDelimiter
+				\ start="@\["rs=e
+				\ end="@\@1<!\]"re=s
+				\ contained containedin=nowebDocChunk
+		endif
 	endfor
 endfunction
 
 " Load the requested documentation languages or default to `tex'.
-if exists("noweb_doc_languages")
-	for language in split(noweb_doc_languages, ",")
+if exists("g:noweb_doc_languages")
+	for language in split(g:noweb_doc_languages, ",")
 		call noweb#LoadDocLanguages(language)
 	endfor
 else
 	call noweb#LoadDocLanguages("tex")
 endif
 
-" Generally, the region named `nowebCodeChunkSYN' defines the code chunk for
-" language `SYN'.  The region named `nowebCodeChunkDefault' denotes the default
-" code syntax that is active when no `lang=SYN' option (for a loaded language)
-" is given.
-syntax region nowebCodeChunkDefault
+" All code chunks are contained in a `nowebCodeChunkIntro' region.
+" It contains a `nowebCodeChunkDef' child region, which regards the chunk's
+" introduction (matching the regular expression `^<<.*>>=$') as region and
+" highlights it.
+" The `nowebCodeChunk' cluster is also contained.  It represents the set of
+" all types of code chunks, one for the default type (`nowebCodeChunkDefault')
+" and one for each code syntax that has been loaded.
+syntax region nowebCodeChunkIntro
 	\ start="^<<.*>>=$"
 	\ end="\%$"
 	\ contained containedin=nowebChunk
-	\ contains=nowebCodeChunkDef,nowebCodeChunkDefaultCode
+	\ contains=nowebCodeChunkDef,nowebCodeChunk
 	\ transparent
 
-" The cluster `nowebCodeChunk' contains all loaded code chunk regions
-" (including the chunk introduction) and the cluster `nowebCodeChunkCode'
-" contains all regions of actual code language blocks, excluding the chunk
-" intruduction (`<<.*>>=').
+" Generally, the region named `nowebCodeChunkSYN' defines the code chunk for
+" language `SYN'.  The region named `nowebCodeChunkDefault' denotes the
+" default code syntax that is active when no `lang=SYN' option (for a loaded
+" language `SYN') is given.
+syntax region nowebCodeChunkDefault
+	\ start=".\@="
+	\ end="\%$"
+	\ contained containedin=nowebCodeChunkIntro
+	\ contains=nowebCodeChunkOpts,nowebCodeChunkDefaultCode
+	\ transparent
+
+" The cluster `nowebCodeChunk' contains all loaded code chunk regions,
+" including chunk options.  The cluster `nowebCodeChunkCode' contains all
+" regions pertaining to loaded code languages.
 syntax cluster nowebCodeChunk contains=nowebCodeChunkDefault
 syntax cluster nowebCodeChunkCode contains=nowebCodeChunkDefaultCode
 
@@ -194,7 +235,7 @@ syntax cluster nowebCodeChunkCode contains=nowebCodeChunkDefaultCode
 " accepts variadic arguments and expects each argument to be a string denoting
 " a syntax file name, without extension.
 " Example: `:call noweb#LoadCodeLanguages("c", "cpp", "python", "r")'
-function noweb#LoadCodeLanguages(...)
+function! noweb#LoadCodeLanguages(...)
 	for syntax in a:000
 		" Undefine `b:current_syntax' so we don't confuse the syntax
 		" script we're going to load.
@@ -207,23 +248,28 @@ function noweb#LoadCodeLanguages(...)
 		" Restore `b:current_syntax' according to the conventions.
 		let b:current_syntax = "noweb"
 
-		" Define the region `nowebCodeChunkSYN' for syntax named `SYN'.
-		" It contains the `nowebCodeChunkDef', which highlights the
-		" code chunk's introduction, as well as the region
-		" `nowebCodeChunkSYNDoc', which recognizes the code's actual
+		" Define the region `nowebCodeChunkSYN' for syntax named
+		" `SYN'.  It contains the `nowebCodeChunkOpts', which
+		" highlights the code chunk's options, as well as the region
+		" `nowebCodeChunkSYNCode', which recognizes the code's actual
 		" syntax (`SYN').
-		execute "syntax region nowebCodeChunk" . syntax
-			\ . " start=/^<<.*\\[\\([^]]*,\\)*lang=" . syntax . "\\(,[^]]*\\)*\\]>>=$/"
-			\ . " end=/\\%$/"
-			\ . " contained containedin=nowebChunk"
-			\ . " contains=nowebCodeChunkDef,nowebCodeChunk" . syntax . "Code"
-			\ . " transparent"
+		" Generation of this region is supressed if strict noweb
+		" compatibility is requested.
+		if exists("g:noweb_code_options_enabled") && g:noweb_code_options_enabled ==? "yes"
+			execute "syntax region nowebCodeChunk" . syntax
+				\ . " start=/^@\\[\\(\\_.*\\(,\\|\\s\\|$\\)\\)\\?lang=" . syntax . "\\(\\(,\\|\\s\\|$\\)\\_.*\\)\\?\\]/"
+				\ . " end=/\\%$/"
+				\ . " contained containedin=nowebCodeChunkIntro"
+				\ . " contains=nowebCodeChunkOpts,nowebCodeChunk" . syntax . "Code"
+				\ . " transparent"
+		endif
 
-		" Create both the `nowebCodeChunkSYNChunk' as well as the
+		" Create both the `nowebCodeChunkSYNCode' as well as the
 		" default region `nowebCodeChunkDefaultCode' and make it
 		" recognize the requested language. Re-creating the region for
 		" the default syntax has the effect that chunks that omit a
-		" suitable `lang=SYN' option are matched to this syntax, too.
+		" suitable `lang=SYN' option are from now on matched to this
+		" syntax, too.
 		for name in [ syntax, "Default" ]
 			execute "syntax region nowebCodeChunk" . name . "Code"
 				\ . " start=/.\\@=/"
@@ -235,11 +281,11 @@ function noweb#LoadCodeLanguages(...)
 		execute "syntax cluster nowebCodeChunk add=nowebCodeChunk" . syntax
 		execute "syntax cluster nowebCodeChunkCode add=nowebCodeChunk" . syntax . "Code"
 
-		" Although `nowebCodeChunkDef' and `nowebCodeChunkOpts' both do
-		" not depend on the syntax being loaded, we still re-create
+		" Although `nowebCodeChunkDef' and `nowebCodeChunkOpts' both
+		" do not depend on the syntax being loaded, we still re-create
 		" them here to keep their priority high.  If we don't do that,
-		" vim will attempt to apply the actual documentation syntax to
-		" the chunk's introduction.
+		" vim will attempt to apply the actual code syntax to the
+		" chunk's introduction.
 		" Similarly, if we don't recreate `nowebCodeChunkRef' then the
 		" code chunk references (`<<...>>') will be highlighted
 		" according to the code syntax, instead of noweb's meta syntax.
@@ -248,37 +294,40 @@ function noweb#LoadCodeLanguages(...)
 			\ matchgroup=nowebCodeChunkDelimiter
 			\ start="^<<"rs=e
 			\ end=">>=$"re=s
-			\ contained containedin=nowebCodeChunk
-			\ contains=nowebCodeChunkOpts
+			\ contained containedin=nowebCodeChunkIntro
+			\ nextgroup=nowebCodeChunk
 			\ oneline
+
+		if exists("g:noweb_code_options_enabled") && g:noweb_code_options_enabled ==? "yes"
+			syntax region nowebCodeChunkOpts
+				\ matchgroup=nowebCodeChunkOptsDelimiter
+				\ start="@\["rs=e
+				\ end="@\@1<!\]"re=s
+				\ contained containedin=nowebCodeChunk
+		endif
 
 		syntax region nowebCodeChunkRef
 			\ matchgroup=nowebCodeChunkDelimiter
 			\ start="^\s*<<"hs=e-2,rs=e
 			\ end=">>\s*$"he=s+2,re=s
-			\ contains=nowebCodeChunkOpts
-			\ oneline
-
-		syntax region nowebCodeChunkOpts
-			\ start="\s*\["ms=e,hs=e,rs=e
-			\ end="\]>>"me=s,he=s,re=s
-			\ contained containedin=nowebCodeChunkDef
 			\ oneline
 	endfor
 endfunction
 
 " Load the requested code languages or none at all.
-if exists("noweb_code_languages")
-	for language in split(noweb_code_languages, ",")
+if exists("g:noweb_code_languages")
+	for language in split(g:noweb_code_languages, ",")
 		call noweb#LoadCodeLanguages(language)
 	endfor
 else
 	call noweb#LoadCodeLanguages("nosyntax")
 endif
 
+highlight link nowebDocChunkOptsDelimiter	nowebDelimiter
 highlight link nowebDocChunkDelimiter		nowebDelimiter
 highlight link nowebDocChunkOpts		nowebChunkOpts
 
+highlight link nowebCodeChunkOptsDelimiter	nowebDelimiter
 highlight link nowebCodeChunkDelimiter		nowebDelimiter
 highlight link nowebCodeChunkDef		nowebCodeChunkName
 highlight link nowebCodeChunkRef		nowebCodeChunkName

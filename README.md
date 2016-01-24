@@ -1,49 +1,49 @@
 # vim-syntax-noweb
 
-A syntax file for the `noweb' literate programming system.
+A syntax file for the `noweb` literate programming system.
 
-Actually, a small extension of noweb's syntax is recognized, as follows.
+This syntax file highlights chunks written in arbitrary documentation and code
+languages according to their respective syntax definition.
 
-The leading `@` that introduces documentation chunks may optionally be followed
-by a region enclosed in square brackets (`'[' ... ']'`), the content of which
-are taken to be comma separated options pertaining to the documentation chunk
-introduced. If the pattern `lang=SYN` matches (exactly) one of the options,
-then vim will highlight the chunk according to the syntax file `SYN`, if it has
-been loaded. The preamble cannot have options since it is not introduced
-explicitly.
-For example, `@[lang=tex] This is to be highlighted as \TeX{}`.
-
-Similarly, the pattern `'<<' ... '>>='` that introduces code chunks may
-optionally contain an option region (as in `'<<' ... '[' OPTS ']' '>>='`).
-It, too, may contain the `lang=SYN` option and if it does, vim will highlight
-the code chunk according to the syntax file `SYN`, if it has been loaded.
-For example, `<<Do Something [lang=cpp]>>=` introduces a C++ code chunk.
-
-Documentation languages can be loaded by `:call noweb#LoadDocLanguages("SYN")`,
-where `SYN` is the name of a syntax file, without extension.
-Code languages can be loaded by `:call noweb#LoadCodeLanguages("SYN")`,
-where `SYN` is the name of a syntax file, without extension.
-Syntax files identified by the variables `noweb_doc_languages` and
-`noweb_code_languages`, which are strings of comma-separated syntax file
-names (without extension), are loaded during initialization.
+Languages for documentation chunks can be loaded by `:call
+noweb#LoadDocLanguages("SYN")`, where `SYN` is the name of a syntax file,
+without extension.  Languages for code chunks can be loaded by `:call
+noweb#LoadCodeLanguages("SYN")`, where `SYN` is the name of a syntax file,
+without extension.  Syntax files identified by the variables
+`noweb_doc_languages` and `noweb_code_languages`, which are strings of
+comma-separated syntax file names (without extension), are loaded during
+initialization.
 
 Regardless of the method of language loading, the syntax that has been loaded
-least recently is taken to be the default syntax that will be employed
-whenever a chunk is missing the `lang=SYN` option.
+least recently is taken to be the syntax that will be employed by default.
 
-So, putting `let noweb_code_languages="c,cpp,python,r"` into your .vimrc
-prior to loading this syntax file will make code languages for C, C++, Python
-and R available, where R is the syntax that will be assumed for all chunks
-missing a suitable option.
+So, putting `let noweb_code_languages="c,cpp,python,r"` into your .vimrc prior
+to loading this syntax file will make code languages for C, C++, Python and R
+available, with R being the default syntax.
 
 If `noweb_doc_languages` is not defined, it will default to `tex`.
 If `noweb_code_languages` is not defined, it will default to `nosyntax`.
 
-It is possible to work with files following strict noweb syntax (without
-`lang=SYN` options) and still highlight various different code languages
-(although not at the same time). The method is to invoke `:call
+Chunks in web files following strict noweb syntax can only be highlighted in
+the selected default syntax and all chunks will be highlighted thusly at the
+same time.  It is still possible, albeit cumbersome, to work with code chunks
+in various different programming languages.  The method is to invoke `:call
 noweb#LoadCodeLanguages("SYN")` with SYN set to the syntax that is to be used
 for highlighting whenever you switch to a chunk that has a different syntax
-than the one you have just been working with.  This will set the default
-syntax to `SYN` which will render all code chunks with unidentified languages
-according to that syntax file.
+than the one you have just been working with.  This will set the default syntax
+to `SYN` which will render all code chunks according to that syntax file by
+default.
+
+This syntax file offers to optionally recognize a syntax extension that makes
+working with heterogeneously typed chunks easier.  If it is enabled, then a
+chunk may begin with an option region, which may span several lines.  It is
+introduced by `@[` and terminated by `]` and its content is taken to be a comma
+separated list of key/value assignments pertaining to the chunk introduced.  If
+the pattern `lang=SYN` matches (exactly) one of the options, then vim will
+highlight the chunk according to the syntax file `SYN`, if it has been loaded.
+Since this places the options into the chunk's content, a custom filter in the
+noweb toolchain is required to strip them out again.
+
+This extension can be enabled by the vim variables called
+`noweb_doc_options_enabled` and `noweb_code_options_enabled`.
+They should be set to "yes" if option recognition is desired.
