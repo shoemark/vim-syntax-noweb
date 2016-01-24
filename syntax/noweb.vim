@@ -257,7 +257,7 @@ function! noweb#LoadCodeLanguages(...)
 		" compatibility is requested.
 		if exists("g:noweb_code_options_enabled") && g:noweb_code_options_enabled ==? "yes"
 			execute "syntax region nowebCodeChunk" . syntax
-				\ . " start=/^@\\[\\_s*\\([^]]\\+\\_s*,\\_s*\\)*lang=" . syntax . "\\(\\_s*,\\_s*[^]]\\+\\)*\\_s*\\]/"
+				\ . " start=/@\\[\\_s*\\([^]]\\+\\_s*,\\_s*\\)*lang=" . syntax . "\\(\\_s*,\\_s*[^]]\\+\\)*\\_s*\\]/"
 				\ . " end=/\\%$/"
 				\ . " contained containedin=nowebCodeChunkIntro"
 				\ . " contains=nowebCodeChunkOpts,nowebCodeChunk" . syntax . "Code"
