@@ -144,7 +144,7 @@ function! noweb#LoadDocLanguages(...)
 		" compatibility is requested.
 		if exists("g:noweb_doc_options_enabled") && g:noweb_doc_options_enabled ==? "yes"
 			execute "syntax region nowebDocChunk" . syntax
-				\ . " start=/@\\[\\_s*\\([^]]\\+\\_s*,\\_s*\\)*lang=" . syntax . "\\(\\_s*,\\_s*[^]]\\+\\)*\\_s*\\]/"
+				\ . " start=/@\\[\\_s*\\(\\([^@\\[\\]]\\|@.\\)\\+\\_s*,\\_s*\\)*lang=" . syntax . "\\(\\_s*,\\_s*\\([^@\\[\\]]\\|@.\\)\\+\\)*\\_s*\\]/"
 				\ . " end=/\\%$/"
 				\ . " contained containedin=nowebDocChunkIntro"
 				\ . " contains=nowebDocChunkOpts,nowebDocChunk" . syntax . "Doc"
@@ -185,7 +185,7 @@ function! noweb#LoadDocLanguages(...)
 			syntax region nowebDocChunkOpts
 				\ matchgroup=nowebDocChunkOptsDelimiter
 				\ start="@\["rs=e
-				\ end="@\@1<!\]"re=s
+				\ end="\(\|\_s\|[^@]\([^@]\|@.\)\)*\]"re=e-1
 				\ contained containedin=nowebDocChunk
 		endif
 	endfor
@@ -257,7 +257,7 @@ function! noweb#LoadCodeLanguages(...)
 		" compatibility is requested.
 		if exists("g:noweb_code_options_enabled") && g:noweb_code_options_enabled ==? "yes"
 			execute "syntax region nowebCodeChunk" . syntax
-				\ . " start=/@\\[\\_s*\\([^]]\\+\\_s*,\\_s*\\)*lang=" . syntax . "\\(\\_s*,\\_s*[^]]\\+\\)*\\_s*\\]/"
+				\ . " start=/@\\[\\_s*\\(\\([^@\\[\\]]\\|@.\\)\\+\\_s*,\\_s*\\)*lang=" . syntax . "\\(\\_s*,\\_s*\\([^@\\[\\]]\\|@.\\)\\+\\)*\\_s*\\]/"
 				\ . " end=/\\%$/"
 				\ . " contained containedin=nowebCodeChunkIntro"
 				\ . " contains=nowebCodeChunkOpts,nowebCodeChunk" . syntax . "Code"
@@ -302,7 +302,7 @@ function! noweb#LoadCodeLanguages(...)
 			syntax region nowebCodeChunkOpts
 				\ matchgroup=nowebCodeChunkOptsDelimiter
 				\ start="@\["rs=e
-				\ end="@\@1<!\]"re=s
+				\ end="\(\|\_s\|[^@]\([^@]\|@.\)\)*\]"re=e-1
 				\ contained containedin=nowebCodeChunk
 		endif
 
