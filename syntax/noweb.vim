@@ -184,8 +184,8 @@ function! noweb#LoadDocLanguages(...)
 		if exists("g:noweb_doc_options_enabled") && g:noweb_doc_options_enabled ==? "yes"
 			syntax region nowebDocChunkOpts
 				\ matchgroup=nowebDocChunkOptsDelimiter
-				\ start="@\["rs=e
-				\ end="\(\|\_s\|[^@]\([^@]\|@.\)\)*\]"re=e-1
+				\ start="@\[\_s*\(\([^@\[\]]\|@.\)\+\_s*,\_s*\)*"rs=s+2
+				\ end="\_s*\(\([^@\[\]]\|@.\)\+\_s*,\_s*\)*\]"re=e-1
 				\ contained containedin=nowebDocChunk
 		endif
 	endfor
@@ -301,8 +301,8 @@ function! noweb#LoadCodeLanguages(...)
 		if exists("g:noweb_code_options_enabled") && g:noweb_code_options_enabled ==? "yes"
 			syntax region nowebCodeChunkOpts
 				\ matchgroup=nowebCodeChunkOptsDelimiter
-				\ start="@\["rs=e
-				\ end="\(\|\_s\|[^@]\([^@]\|@.\)\)*\]"re=e-1
+				\ start="@\[\_s*\(\([^@\[\]]\|@.\)\+\_s*,\_s*\)*"rs=s+2
+				\ end="\_s*\(\([^@\[\]]\|@.\)\+\_s*,\_s*\)*\]"re=e-1
 				\ contained containedin=nowebCodeChunk
 		endif
 
